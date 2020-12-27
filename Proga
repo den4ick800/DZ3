@@ -1,0 +1,192 @@
+#include <iostream>
+#include <string>
+#include <algorithm>
+#include <iostream>
+#include <map>
+#include <vector>
+#include <deque>
+
+#define _USE_MATH_DEFINES
+
+#include <cmath>
+
+double simple_calculations(std::string &h) {
+    //проверка на наличие лишних знаков действий
+    //+проверка на правильное написание нецелого числа( если написано через запятую, а не точку)
+    int number_of_mistakes = 0;
+    for (unsigned int i = 0; i < h.length(); i++) {
+        if (((h[i] == '+') || (h[i] == '-') || (h[i] == '/') || (h[i] == '*')) &&
+            ((h[i + 1] == '+') || (h[i + 1] == '-') || (h[i + 1] == '/') || (h[i + 1] == '*'))) {
+            std::cerr << "Ошибка:слишком много знаков действий";
+            i = h.length();
+            number_of_mistakes++;
+        }
+        if (((i == 0) && ((h[i] == '+') || (h[i] == '-') || (h[i] == '/') || (h[i] == '*'))) ||
+            ((i + 1 == h.length()) && ((h[i] == '+') || (h[i] == '-') || (h[i] == '/') || (h[i] == '*')))) {
+            std::cerr << "Ошибка:слишком много знаков действий";
+            i = h.length();
+            number_of_mistakes++;
+        }
+        if (h[i] == ',') {
+            std::cerr << "Ошибка:неверная запись дробных чисел";
+            i = h.length();
+            number_of_mistakes++;
+        }
+
+    }
+    if (number_of_mistakes == 0) {
+        std::vector<std::pair<std::string, double>> calculations;
+        int number_of_numbers = 0;
+        int j = 0;
+        std::string part_of_string;
+        double number;
+        for (unsigned int i = 0; i < h.size() + 1; i++) {
+            if ((h[i] == '+') || (h[i] == '-') || (h[i] == '/') || (h[i] == '*') || (i == h.size())) {
+                if (number_of_numbers != 0) {
+                    part_of_string = h[j];
+                    number = atof(h.substr(j + 1, i - j - 1).c_str());
+                    if (number == 0) {
+                        if ((h.substr(j + 1, i - j - 1) == "e")) {
+                            number = M_E;
+                        }
+                        if ((h.substr(j + 1, i - j - 1) == "PI")) {
+                            number = M_PI;
+                        }
+                    }
+                    calculations.push_back(std::make_pair(part_of_string, number));
+                    number_of_numbers++;
+                    j = i;
+                }
+                if (number_of_numbers == 0) {
+                    number = atof(h.substr(j, i - j).c_str());
+                    if (number == 0) {
+                        if ((h.substr(j, i - j) == "e")) {
+                            number = M_E;
+                        }
+                        if ((h.substr(j, i - j) == "PI")) {
+                            number = M_PI;
+                        }
+                    }
+                    calculations.push_back(std::make_pair(part_of_string, number));
+                    number_of_numbers++;
+                    j = i;
+                }
+            }
+        }
+        for (unsigned int i = 0; i < calculations.size(); i++) {
+            if ((calculations[i].first == "*") || (calculations[i].first == "/")) {
+                if (calculations[i].first == "*") {
+                    calculations[i - 1].second *= calculations[i].second;
+                    calculations.erase(calculations.begin() + i);
+                    i--;
+                }
+                if (calculations[i].first == "/") {
+                    calculations[i - 1].second /= calculations[i].second;
+                    calculations.erase(calculations.begin() + i);
+                    i--;
+                }
+            }
+        }
+        for (unsigned int i = 0; i < calculations.size(); i++) {
+            if (calculations[i].first == "+") {
+                calculations[i - 1].second += calculations[i].second;
+                calculations.erase(calculations.begin() + i);
+                i--;
+            }
+            if (calculations[i].first == "-") {
+                calculations[i - 1].second -= calculations[i].second;
+                calculations.erase(calculations.begin() + i);
+                i--;
+            }
+        }
+        double result = calculations[0].second;
+        return result;
+    }
+
+}
+
+double not_so_simple_calculations(std::string &h) {
+    int number_of_mistakes = 0;
+//проверка на соответствие "(" и ")"
+    int right_number = 0;
+    int left_number = 0;
+    for (unsigned int i = 0; i < h.size() + 1; i++) {
+        if (h[i] == '(') { left_number++; }
+        if (h[i] == ')') { right_number++; }
+    }
+    if (left_number != right_number) {
+        std::cerr << "Ошибка:неверное расположение скобок";
+        number_of_mistakes++;
+    }
+
+//проверка на подобный случай: 4(... или ...)4
+    for (unsigned int i = 1; i < h.size(); i++) {
+        if (((h[i] == '(') && (atoi(h.substr(i - 1, 1).c_str()) != 0)) || ((h[i] == ')') &&
+                                                                           (atoi(h.substr(i + 1, 1).c_str()) != 0))) {
+            std::cerr << "Ошибка:добавьте недостающие символы";
+            i = h.size();
+            number_of_mistakes++;
+        }
+    }
+    if (number_of_mistakes == 0) {
+        int left = -1;
+        int right = -1;
+        for (unsigned int i = 0; i < h.size(); i++) {
+            if (h[i] == '(') { left = i; }
+            if (h[i] == ')') { right = i; }
+            if ((left != -1) && (right != -1)) {
+                std::string sdf = h.substr(left + 1, right - 1 - left);
+                double sdf_1 = simple_calculations(sdf);
+                h.erase(left, right - left + 1);
+                std::string s = std::to_string(sdf_1);
+                h.insert(left, s);
+                left = -1;
+                right = -1;
+                i = -1;
+            }
+        }
+        double answer = simple_calculations(h);
+        return answer;
+    }
+}
+
+int main() {
+    setlocale(0, "Russian");
+    std::cout << "Добро пожаловать в строковый калькулятор" << std::endl
+              << "Пожалуйста введите выражение, которое вы хотели бы посчитать" << std::endl;
+    std::string expression;
+    getline(std::cin, expression);
+    // удадение возможных пробелов в выражении
+    for (unsigned int i = 0; i < expression.length(); i++) {
+        if (expression[i] == ' ') {
+            expression.erase(expression.begin() + i);
+        }
+    }
+    // на удовлетворительно
+    if ((std::find(expression.begin(), expression.end(), '(') == expression.end()) &&
+        (std::find(expression.begin(), expression.end(), ')') == expression.end())) {
+        if (std::find(expression.begin(), expression.end(), 'sin') == expression.end() &&
+            std::find(expression.begin(), expression.end(), 'cos') == expression.end() &&
+            std::find(expression.begin(), expression.end(), 'tg') == expression.end() &&
+            std::find(expression.begin(), expression.end(), 'ctg') == expression.end() &&
+            std::find(expression.begin(), expression.end(), 'exp') == expression.end() &&
+            (std::find(expression.begin(), expression.end(), 'x') == expression.end())) {
+            double result = simple_calculations(expression);
+            std::cout << result;
+        }
+    }
+    //на хорошо
+    if ((std::find(expression.begin(), expression.end(), '(') != expression.end()) &&
+        (std::find(expression.begin(), expression.end(), ')') != expression.end())) {
+        if (std::find(expression.begin(), expression.end(), 'sin') == expression.end() &&
+            std::find(expression.begin(), expression.end(), 'cos') == expression.end() &&
+            std::find(expression.begin(), expression.end(), 'tg') == expression.end() &&
+            std::find(expression.begin(), expression.end(), 'ctg') == expression.end() &&
+            std::find(expression.begin(), expression.end(), 'exp') == expression.end() &&
+            (std::find(expression.begin(), expression.end(), 'x') == expression.end())) {
+
+            double result_1 = not_so_simple_calculations(expression);
+            std::cout << result_1;
+        }
+    }
+}
